@@ -27,6 +27,7 @@ def cumulative_object_counting_x_axis(input_video, detection_graph, category_ind
         output_movie = cv2.VideoWriter('the_output.avi', fourcc, fps, (width, height))
 
         total_passed_vehicle = 0
+        counterTemp = 0
         speed = "waiting..."
         direction = "waiting..."
         size = "waiting..."
@@ -56,20 +57,23 @@ def cumulative_object_counting_x_axis(input_video, detection_graph, category_ind
                     break
                 
                 input_frame = frame
+                defaultFrame = frame
 
                 # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
                 image_np_expanded = np.expand_dims(input_frame, axis=0)
-
+                
                 # Actual detection.
                 (boxes, scores, classes, num) = sess.run(
                     [detection_boxes, detection_scores, detection_classes, num_detections],
                     feed_dict={image_tensor: image_np_expanded})
-
+                
                 # insert information text to video frame
                 font = cv2.FONT_HERSHEY_SIMPLEX
+                
+                
 
                 # Visualization of the results of a detection.        
-                counter, csv_line, counting_mode = vis_util.visualize_boxes_and_labels_on_image_array_x_axis(cap.get(1),
+                counter, csv_line, counting_mode, trimmingBox = vis_util.visualize_boxes_and_labels_on_image_array_x_axis(cap.get(1),
                                                                                                              input_frame,
                                                                                                              1,
                                                                                                              is_color_recognition_enabled,
@@ -77,6 +81,7 @@ def cumulative_object_counting_x_axis(input_video, detection_graph, category_ind
                                                                                                              np.squeeze(classes).astype(np.int32),
                                                                                                              np.squeeze(scores),
                                                                                                              category_index,
+                                                                                                             targeted_objects = 'person',
                                                                                                              x_reference = roi,
                                                                                                              deviation = deviation,
                                                                                                              use_normalized_coordinates=True,
@@ -89,6 +94,19 @@ def cumulative_object_counting_x_axis(input_video, detection_graph, category_ind
                   cv2.line(input_frame, (roi, 0), (roi, height), (0, 0, 0xFF), 5)
 
                 total_passed_vehicle = total_passed_vehicle + counter
+
+                cv2.imshow("frame", frame)
+                
+                if counter == 1:
+                    ymin, xmin, ymax, xmax = trimmingBox
+                    (left, right, top, bottom) = (int(xmin * width), int(xmax * width), int(ymin * height), int(ymax * height))
+                    trimming = defaultFrame[top : bottom, left : right]
+                    
+                    
+                    file_path = './Detected Pedestrians' + str(total_passed_vehicle) + ".jpg"
+                    cv2.imwrite(file_path, trimming)
+                    #print(total_passed_vehicle)
+
 
                 # insert information text to video frame
                 font = cv2.FONT_HERSHEY_SIMPLEX

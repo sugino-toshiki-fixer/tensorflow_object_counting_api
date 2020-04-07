@@ -696,8 +696,13 @@ def visualize_boxes_and_labels_on_image_array_x_axis(current_frame_number,
   """
   # Create a display string (and color) for every box location, group any boxes
   # that correspond to the same location.
+  
   csv_line_util = "not_available"
   counter = 0
+  roiPos = 785
+  mid = 0
+  midTempDiff = roiPos
+  trimmingBox = [0,0,0,0]
   ROI_POSITION.insert(0,x_reference)
   DEVIATION.insert(0,deviation)
   x_axis.insert(0,1)
@@ -749,7 +754,7 @@ def visualize_boxes_and_labels_on_image_array_x_axis(current_frame_number,
       )'''
         
     display_str_list=box_to_display_str_map[box]
-
+    
     if(mode == 1 and targeted_objects == None):
       counting_mode = counting_mode + str(display_str_list)
 
@@ -778,7 +783,18 @@ def visualize_boxes_and_labels_on_image_array_x_axis(current_frame_number,
                   color=color,
                   radius=line_thickness / 2,
                   use_normalized_coordinates=use_normalized_coordinates)
-
+            
+            im_width, im_height, c = image.shape
+            (left, right, top, bottom) = (int(xmin * im_width), int(xmax * im_width), int(ymin * im_height), int(ymax * im_height))
+            mid = (left + right) // 2
+            midDiff = roiPos - mid
+            
+            if midTempDiff > midDiff:
+              midTempDiff = midDiff
+              targetTrimmingBox = [ymin-0.01, xmin-0.01, ymax+0.01, xmax+0.01]
+            
+            
+            
     elif (targeted_objects == None):
             if instance_masks is not None:
               draw_mask_on_image_array(image, box_to_instance_masks_map[box], color=color)
@@ -802,11 +818,17 @@ def visualize_boxes_and_labels_on_image_array_x_axis(current_frame_number,
                   radius=line_thickness / 2,
                   use_normalized_coordinates=use_normalized_coordinates)
 
+  #print(counting_mode)
   if(1 in is_vehicle_detected):
         counter = 1
+        #print(ymin,xmin,ymax,xmax)      
+        
         del is_vehicle_detected[:]
         is_vehicle_detected = []        
         csv_line_util = class_name + "," + csv_line 
+
+        trimmingBox = targetTrimmingBox
+        
 
   if(mode == 1):
     counting_mode = counting_mode.replace("['", " ").replace("']", " ").replace("%", "")
@@ -814,7 +836,7 @@ def visualize_boxes_and_labels_on_image_array_x_axis(current_frame_number,
     counting_mode = str(custom_string_util.word_count(counting_mode))
     counting_mode = counting_mode.replace("{", "").replace("}", "")
 
-    return counter, csv_line_util, counting_mode
+    return counter, csv_line_util, counting_mode, trimmingBox
 
   else:
     return counter, csv_line_util
